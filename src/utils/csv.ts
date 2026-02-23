@@ -109,7 +109,7 @@ export function applyMappings(
 }
 
 export function generateCsv(data: Record<string, string>[], columns: string[]): string {
-  return Papa.unparse(data, { columns });
+  return Papa.unparse(data, { columns, newline: "\n" });
 }
 
 export function downloadCsv(csvString: string, filename: string): void {

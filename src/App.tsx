@@ -164,7 +164,8 @@ export function App() {
 
     const mappedData = applyMappings(sourceData, mappings, columnTypes);
     const csvString = generateCsv(mappedData, templateColumns);
-    downloadCsv(csvString, `mapped_${sourceFileName}`);
+    const baseName = sourceFileName.replace(/\.[^.]+$/, "");
+    downloadCsv(csvString, `mapped_${baseName}.csv`);
   }, [sourceData, mappings, templateColumns, sourceFileName]);
 
   const canStartMapping = templateColumns.length > 0 && sourceColumns.length > 0 && sourceData.length > 0;
