@@ -1,5 +1,7 @@
 # CSV Mapper
 
+**Live app: https://amnaejaz.github.io/csv-mapper/**
+
 A client-side tool that uses AI to intelligently map columns from a source CSV to a target template CSV.
 
 ## Features
