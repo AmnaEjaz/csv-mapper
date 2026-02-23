@@ -1,3 +1,6 @@
 node_modules
 dist
 .DS_Store
+source.xlsx
+mapped.xlsx
+mapped_*
