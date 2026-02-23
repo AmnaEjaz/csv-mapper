@@ -66,6 +66,21 @@ export function App() {
     }
   }, []);
 
+  const handleUseDefaultTemplate = useCallback(async () => {
+    try {
+      const response = await fetch("./templates/bulk_import_template.csv");
+      if (!response.ok) throw new Error("Failed to fetch default template");
+      const blob = await response.blob();
+      const file = new File([blob], "bulk_import_template.csv", { type: "text/csv" });
+      const { headers } = await parseCsv(file);
+      setTemplateColumns(headers);
+      setTemplateFileName("bulk_import_template.csv (default)");
+      setError(null);
+    } catch {
+      setError("Failed to load default template.");
+    }
+  }, []);
+
   const handleSourceUpload = useCallback(async (file: File) => {
     try {
       const { headers, data } = await parseCsv(file);
@@ -191,13 +206,21 @@ export function App() {
       {step === "upload" && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FileUploader
-              label="Upload Target Template"
-              description="CSV file with your target column headers"
-              onFileSelected={handleTemplateUpload}
-              isLoaded={templateColumns.length > 0}
-              loadedFileName={templateFileName}
-            />
+            <div className="space-y-2">
+              <FileUploader
+                label="Upload Target Template"
+                description="CSV file with your target column headers"
+                onFileSelected={handleTemplateUpload}
+                isLoaded={templateColumns.length > 0}
+                loadedFileName={templateFileName}
+              />
+              <button
+                onClick={handleUseDefaultTemplate}
+                className="w-full py-2 text-sm text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+              >
+                Or use default Borderless bulk import template
+              </button>
+            </div>
             <FileUploader
               label="Upload Source CSV"
               description="CSV file with data to map"
