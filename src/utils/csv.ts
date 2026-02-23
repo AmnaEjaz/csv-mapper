@@ -5,8 +5,8 @@ import { splitFullName } from "./llm";
 import { normalizeValue } from "./normalize";
 import type { ColumnType } from "./types";
 
-function isXlsx(file: File): boolean {
-  return file.name.endsWith(".xlsx") || file.name.endsWith(".xls");
+function isSpreadsheet(file: File): boolean {
+  return /\.(xlsx|xls|ods)$/i.test(file.name);
 }
 
 function parseXlsx(file: File): Promise<{ headers: string[]; data: Record<string, string>[] }> {
@@ -64,9 +64,10 @@ function parseCsvFile(file: File): Promise<{ headers: string[]; data: Record<str
 }
 
 export function parseFile(file: File): Promise<{ headers: string[]; data: Record<string, string>[] }> {
-  if (isXlsx(file)) {
+  if (isSpreadsheet(file)) {
     return parseXlsx(file);
   }
+  // CSV, TSV, TXT — PapaParse auto-detects delimiters
   return parseCsvFile(file);
 }
 

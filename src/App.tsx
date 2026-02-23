@@ -202,11 +202,11 @@ export function App() {
             <div className="space-y-2">
               <FileUploader
                 label="Upload Target Template"
-                description="CSV or XLSX file with your target column headers"
+                description="CSV, XLSX, ODS, or TSV file with your target column headers"
                 onFileSelected={handleTemplateUpload}
                 isLoaded={templateColumns.length > 0}
                 loadedFileName={templateFileName}
-                accept=".csv,.xlsx,.xls"
+                accept=".csv,.xlsx,.xls,.ods,.tsv,.txt"
               />
               <button
                 onClick={handleUseDefaultTemplate}
@@ -217,11 +217,11 @@ export function App() {
             </div>
             <FileUploader
               label="Upload Source File"
-              description="CSV or XLSX file with data to map"
+              description="CSV, XLSX, ODS, or TSV file with data to map"
               onFileSelected={handleSourceUpload}
               isLoaded={sourceData.length > 0}
               loadedFileName={sourceFileName}
-              accept=".csv,.xlsx,.xls"
+              accept=".csv,.xlsx,.xls,.ods,.tsv,.txt"
             />
           </div>
 
