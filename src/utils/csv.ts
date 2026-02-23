@@ -15,10 +15,11 @@ function parseXlsx(file: File): Promise<{ headers: string[]; data: Record<string
     reader.onload = (e) => {
       try {
         const arrayBuffer = e.target?.result;
-        const workbook = XLSX.read(arrayBuffer, { type: "array" });
+        const workbook = XLSX.read(arrayBuffer, { type: "array", cellDates: false });
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+        // Use raw: false to get formatted/display values (e.g., dates as "17/09/1986" not serial numbers)
+        const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "", raw: false });
 
         if (jsonData.length === 0) {
           // Try to at least get headers from empty sheet
