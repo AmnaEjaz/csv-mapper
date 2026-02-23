@@ -4,7 +4,7 @@ import { MappingEditor } from "./components/MappingEditor";
 import { Summary } from "./components/Summary";
 import { DataPreview } from "./components/DataPreview";
 import { parseCsv, applyMappings, generateCsv, downloadCsv } from "./utils/csv";
-import { generateMappings } from "./utils/llm";
+import { generateMappingsLocal } from "./utils/llm";
 import { validateColumnType } from "./utils/normalize";
 import type { ColumnMapping, MappingSummary, AppStep, ColumnType } from "./utils/types";
 
@@ -39,7 +39,6 @@ function inferColumnType(columnName: string): ColumnType {
 
 export function App() {
   const [step, setStep] = useState<AppStep>("upload");
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem("csv_mapper_api_key") ?? "");
 
   // Template state
   const [templateColumns, setTemplateColumns] = useState<string[]>([]);
@@ -93,26 +92,20 @@ export function App() {
     }
   }, []);
 
-  const handleStartMapping = useCallback(async () => {
-    if (!apiKey.trim()) {
-      setError("Please enter your Anthropic API key.");
-      return;
-    }
-
-    localStorage.setItem("csv_mapper_api_key", apiKey);
+  const handleStartMapping = useCallback(() => {
     setIsMapping(true);
     setError(null);
 
     try {
-      const result = await generateMappings(sourceColumns, templateColumns, sourceData, apiKey.trim());
+      const result = generateMappingsLocal(sourceColumns, templateColumns);
       setMappings(result);
       setStep("mapping");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to generate mappings. Check your API key and try again.");
+      setError(err instanceof Error ? err.message : "Failed to generate mappings.");
     } finally {
       setIsMapping(false);
     }
-  }, [apiKey, sourceColumns, templateColumns, sourceData]);
+  }, [sourceColumns, templateColumns]);
 
   const handleUpdateMapping = useCallback((index: number, update: Partial<ColumnMapping>) => {
     setMappings((prev) => prev.map((m, i) => (i === index ? { ...m, ...update } : m)));
@@ -174,7 +167,7 @@ export function App() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <header className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">CSV Mapper</h1>
-        <p className="text-gray-500 mt-1">Upload a template and source CSV, then let AI map the columns for you.</p>
+        <p className="text-gray-500 mt-1">Upload a template and source CSV, then smart-match columns automatically.</p>
       </header>
 
       {error && (
@@ -245,31 +238,12 @@ export function App() {
 
           {sourceData.length > 0 && <DataPreview data={sourceData} columns={sourceColumns} title="Source Data Preview" />}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Anthropic API Key</label>
-            <input
-              type="password"
-              className="w-full border rounded-lg px-3 py-2 text-sm"
-              placeholder="sk-ant-..."
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-            />
-            <p className="text-xs text-gray-400 mt-1">Stored locally in your browser only. Used to call Claude Haiku for column matching.</p>
-          </div>
-
           <button
             onClick={handleStartMapping}
             disabled={!canStartMapping || isMapping}
             className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
-            {isMapping ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
-                Mapping columns with AI...
-              </span>
-            ) : (
-              "Map Columns with AI"
-            )}
+            {isMapping ? "Mapping columns..." : "Map Columns"}
           </button>
         </div>
       )}
@@ -279,7 +253,7 @@ export function App() {
         <div className="space-y-6">
           <div className="bg-white border rounded-lg p-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-1">Column Mapping</h2>
-            <p className="text-sm text-gray-500 mb-4">Review the AI-suggested mappings. Use the dropdowns to change any mapping manually.</p>
+            <p className="text-sm text-gray-500 mb-4">Review the auto-matched mappings. Use the dropdowns to change any mapping manually.</p>
             <MappingEditor mappings={mappings} sourceColumns={sourceColumns} onUpdateMapping={handleUpdateMapping} />
           </div>
 
