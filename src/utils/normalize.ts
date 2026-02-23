@@ -12,18 +12,37 @@ export function cleanValue(value: string): string {
   return cleaned;
 }
 
+/** Convert Excel serial number to JS Date */
+function excelSerialToDate(serial: number): Date {
+  // Excel epoch is 1900-01-01, but it incorrectly treats 1900 as a leap year
+  // so we subtract 25569 days to get Unix timestamp (days since 1970-01-01)
+  return new Date((serial - 25569) * 86400000);
+}
+
+function formatDateDDMMYYYY(date: Date): string {
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const year = date.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 export function normalizeDate(value: string): string {
   const cleaned = cleanValue(value);
   if (!cleaned) return "";
 
-  const parsedDate = new Date(cleaned);
-  if (!isNaN(parsedDate.getTime())) {
-    const day = String(parsedDate.getDate()).padStart(2, "0");
-    const month = String(parsedDate.getMonth() + 1).padStart(2, "0");
-    const year = parsedDate.getFullYear();
-    return `${day}/${month}/${year}`;
+  // Check for Excel serial number (integer between ~1 and 100000, covers 1900-2173)
+  const asNum = Number(cleaned);
+  if (Number.isFinite(asNum) && asNum > 0 && asNum < 100000 && String(Math.floor(asNum)) === cleaned) {
+    return formatDateDDMMYYYY(excelSerialToDate(asNum));
   }
 
+  // Try standard date parsing
+  const parsedDate = new Date(cleaned);
+  if (!isNaN(parsedDate.getTime())) {
+    return formatDateDDMMYYYY(parsedDate);
+  }
+
+  // Try DD/MM/YYYY or DD-MM-YYYY manually
   const parts = cleaned.split(/[/\-.]/).map((p) => p.trim());
   if (parts.length === 3) {
     const [a, b, c] = parts;
@@ -59,6 +78,13 @@ export function normalizeEmail(value: string): string {
   return cleanValue(value).toLowerCase();
 }
 
+export function normalizePhone(value: string): string {
+  let cleaned = cleanValue(value);
+  // Strip tel: prefix (e.g., "tel:+44 07907422530" → "+44 07907422530")
+  cleaned = cleaned.replace(/^tel:/i, "").trim();
+  return cleaned;
+}
+
 export function normalizeValue(value: string, type: ColumnType): string {
   switch (type) {
     case "date":
@@ -69,6 +95,8 @@ export function normalizeValue(value: string, type: ColumnType): string {
       return normalizeBoolean(value);
     case "email":
       return normalizeEmail(value);
+    case "phone":
+      return normalizePhone(value);
     case "string":
     default:
       return cleanValue(value);
@@ -101,9 +129,11 @@ export function validateColumnType(values: string[], type: ColumnType): TypeVali
         break;
       }
       case "date": {
+        const asNum = Number(cleaned);
+        const isExcelSerial = Number.isFinite(asNum) && asNum > 0 && asNum < 100000 && String(Math.floor(asNum)) === cleaned;
         const parsed = new Date(cleaned);
         const manualParts = cleaned.split(/[/\-.]/).map((p) => p.trim());
-        isValid = !isNaN(parsed.getTime()) || manualParts.length === 3;
+        isValid = isExcelSerial || !isNaN(parsed.getTime()) || manualParts.length === 3;
         break;
       }
       case "boolean": {
@@ -113,6 +143,9 @@ export function validateColumnType(values: string[], type: ColumnType): TypeVali
       }
       case "email":
         isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleaned);
+        break;
+      case "phone":
+        isValid = true;
         break;
       case "string":
         isValid = true;

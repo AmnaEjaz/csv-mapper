@@ -27,6 +27,12 @@ const INFERRED_COLUMN_TYPES: Record<string, ColumnType> = {
   wage: "number",
   sponsored: "boolean",
   "currently sponsored": "boolean",
+  phone: "phone",
+  "phone number": "phone",
+  telephone: "phone",
+  mobile: "phone",
+  tel: "phone",
+  "contact number": "phone",
 };
 
 function inferColumnType(columnName: string): ColumnType {

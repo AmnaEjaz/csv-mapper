@@ -1,4 +1,4 @@
-export type ColumnType = "string" | "number" | "date" | "boolean" | "email";
+export type ColumnType = "string" | "number" | "date" | "boolean" | "email" | "phone";
 
 export interface ColumnMapping {
   targetColumn: string;
