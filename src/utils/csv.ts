@@ -1,10 +1,52 @@
 import Papa from "papaparse";
+import * as XLSX from "xlsx";
 import type { ColumnMapping } from "./types";
 import { splitFullName } from "./llm";
 import { normalizeValue } from "./normalize";
 import type { ColumnType } from "./types";
 
-export function parseCsv(file: File): Promise<{ headers: string[]; data: Record<string, string>[] }> {
+function isXlsx(file: File): boolean {
+  return file.name.endsWith(".xlsx") || file.name.endsWith(".xls");
+}
+
+function parseXlsx(file: File): Promise<{ headers: string[]; data: Record<string, string>[] }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const arrayBuffer = e.target?.result;
+        const workbook = XLSX.read(arrayBuffer, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+
+        if (jsonData.length === 0) {
+          // Try to at least get headers from empty sheet
+          const headerRow = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 })[0] ?? [];
+          resolve({ headers: headerRow.map(String), data: [] });
+          return;
+        }
+
+        const headers = Object.keys(jsonData[0]);
+        const data = jsonData.map((row) => {
+          const stringRow: Record<string, string> = {};
+          for (const key of headers) {
+            stringRow[key] = row[key] != null ? String(row[key]) : "";
+          }
+          return stringRow;
+        });
+
+        resolve({ headers, data });
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function parseCsvFile(file: File): Promise<{ headers: string[]; data: Record<string, string>[] }> {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
       header: true,
@@ -19,6 +61,13 @@ export function parseCsv(file: File): Promise<{ headers: string[]; data: Record<
       },
     });
   });
+}
+
+export function parseFile(file: File): Promise<{ headers: string[]; data: Record<string, string>[] }> {
+  if (isXlsx(file)) {
+    return parseXlsx(file);
+  }
+  return parseCsvFile(file);
 }
 
 export function applyMappings(

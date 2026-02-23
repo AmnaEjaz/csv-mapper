@@ -3,7 +3,7 @@ import { FileUploader } from "./components/FileUploader";
 import { MappingEditor } from "./components/MappingEditor";
 import { Summary } from "./components/Summary";
 import { DataPreview } from "./components/DataPreview";
-import { parseCsv, applyMappings, generateCsv, downloadCsv } from "./utils/csv";
+import { parseFile, applyMappings, generateCsv, downloadCsv } from "./utils/csv";
 import { generateMappingsLocal } from "./utils/llm";
 import { validateColumnType } from "./utils/normalize";
 import type { ColumnMapping, MappingSummary, AppStep, ColumnType } from "./utils/types";
@@ -56,7 +56,7 @@ export function App() {
 
   const handleTemplateUpload = useCallback(async (file: File) => {
     try {
-      const { headers } = await parseCsv(file);
+      const { headers } = await parseFile(file);
       setTemplateColumns(headers);
       setTemplateFileName(file.name);
       setError(null);
@@ -71,7 +71,7 @@ export function App() {
       if (!response.ok) throw new Error("Failed to fetch default template");
       const blob = await response.blob();
       const file = new File([blob], "bulk_import_template.csv", { type: "text/csv" });
-      const { headers } = await parseCsv(file);
+      const { headers } = await parseFile(file);
       setTemplateColumns(headers);
       setTemplateFileName("bulk_import_template.csv (default)");
       setError(null);
@@ -82,7 +82,7 @@ export function App() {
 
   const handleSourceUpload = useCallback(async (file: File) => {
     try {
-      const { headers, data } = await parseCsv(file);
+      const { headers, data } = await parseFile(file);
       setSourceColumns(headers);
       setSourceData(data);
       setSourceFileName(file.name);
@@ -202,10 +202,11 @@ export function App() {
             <div className="space-y-2">
               <FileUploader
                 label="Upload Target Template"
-                description="CSV file with your target column headers"
+                description="CSV or XLSX file with your target column headers"
                 onFileSelected={handleTemplateUpload}
                 isLoaded={templateColumns.length > 0}
                 loadedFileName={templateFileName}
+                accept=".csv,.xlsx,.xls"
               />
               <button
                 onClick={handleUseDefaultTemplate}
@@ -215,11 +216,12 @@ export function App() {
               </button>
             </div>
             <FileUploader
-              label="Upload Source CSV"
-              description="CSV file with data to map"
+              label="Upload Source File"
+              description="CSV or XLSX file with data to map"
               onFileSelected={handleSourceUpload}
               isLoaded={sourceData.length > 0}
               loadedFileName={sourceFileName}
+              accept=".csv,.xlsx,.xls"
             />
           </div>
 
